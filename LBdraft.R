@@ -4,7 +4,7 @@
 
 #setwd("~/Desktop/Master's dissertation students/Isabelle Apple Leavy 2024/Final dissertation files")
 spec <- read.csv("spec91_NicoleCPP.csv")
-beh <- read.csv("beh91_NicoleCPP.csv")
+beh <- read.csv("beh91_NicoleCPP.csv") #
 beh$species<-as.factor(beh$species)
 beh.neonates.CPP<-read.csv("neonates mastersheet randomisation.csv")
 beh.neonates.CPP$species<-as.factor(beh.neonates.CPP$species)
