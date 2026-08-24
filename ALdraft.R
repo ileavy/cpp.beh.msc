@@ -47,6 +47,7 @@ beh.CPP.gen.cat<-droplevels(beh[!is.na(beh$cpp.gencat),])
 
 beh.neonates.CPP.surv<-droplevels(beh.neonates.CPP[!is.na(beh.neonates.CPP$inf.stat),]) # cleaning data to remove entries without infant survival data
 beh.neonates.CPP.surv$species <- as.factor(beh.neonates.CPP.surv$species)
+nrow(beh.neonates.CPP.surv) #351 cases we have survival data for
 
 neonates.spec.CPP<- data.frame(species = as.factor(levels(beh.neonates.CPP.surv$species))) #creating new dataset at species level for species info on infant survival
 neonates.spec.CPP$group<-tapply(beh.neonates.CPP.surv$group, beh.neonates.CPP.surv$species, first) #variable: group
@@ -57,8 +58,18 @@ neonates.spec.CPP$inf.n<-tapply(beh.neonates.CPP.surv$inf.stat, beh.neonates.CPP
 
 neonates.spec.CPP$inf.dead<-tapply(beh.neonates.CPP.surv$inf.stat, beh.neonates.CPP.surv$species, function(x){ length(which(x=="dead")) }) # new variable with number of dead infants per species
 neonates.spec.CPP$death.prop<-as.numeric(neonates.spec.CPP$inf.dead/neonates.spec.CPP$inf.n) # new variable with death proportion
+nrow(neonates.spec.CPP) #57 species we have death.prop for
+#write.csv(neonates.spec.CPP, "neonates_spec_cpp_death.csv")
 
-# Regression
+# Spearman's Rank Correlation
+cor.test(neonates.spec.CPP$cpp, neonates.spec.CPP$death.prop, method = "spearman")
+#data:  neonates.spec.CPP$cpp and neonates.spec.CPP$death.prop
+#S = 509.32, p-value = 0.04669
+#rho
+#0.4743837
+sum(complete.cases(neonates.spec.CPP[, c("cpp", "death.prop")])) #18 species contributing
+
+# Linear Regression
 reg.species.CPP<-summary(lm(neonates.spec.CPP$death.prop~neonates.spec.CPP$cpp))
 reg.species.CPP
 #                         Estimate Std. Error t value Pr(>|t|)
@@ -143,6 +154,17 @@ table(neonates.spec.CPP$cpp.gencat, useNA = "always")
 #extreme    high     low
 #     6       8      22
 
+neonates.spec.CPP.plot <- droplevels(neonates.spec.CPP[!is.na(neonates.spec.CPP$cpp.gencat), ])
+kruskal.test(death.prop ~ cpp.gencat, data = neonates.spec.CPP.plot)
+#data:  death.prop by cpp.gencat
+#Kruskal-Wallis chi-squared = 4.6684, df = 2, p-value = 0.09689
+pairwise.wilcox.test(neonates.spec.CPP.plot$death.prop,
+                     neonates.spec.CPP.plot$cpp.gencat,
+                     p.adjust.method = "BH")
+#     extreme high
+#high 0.42    -
+#low  0.10    0.47
+
 neonates.spec.CPP$cpp.gencat <- factor(neonates.spec.CPP$cpp.gencat,
                                        levels = c("low", "high", "extreme"),ordered = TRUE)
 ## Testing for significance with randomisation
@@ -199,6 +221,7 @@ CPP.cat.death.plot
 
 ## ~~~~ PART 3: Fetal Emergence (Presentation) vs. CPP ~~~~ ##
 beh.neonates.CPP.pres<- droplevels(beh.neonates.CPP[!is.na(beh.neonates.CPP$presentation),]) # cleaning data to remove neonates without presentation data
+nrow(beh.neonates.CPP.pres) #87 cases
 
 neonates.spec.CPP<- data.frame(species = as.factor(levels(beh.neonates.CPP.pres$species))) #creating new dataset at species level for species info on infant face/vertex presentation
 neonates.spec.CPP$group<-tapply(beh.neonates.CPP.pres$group, beh.neonates.CPP.pres$species, first) #variable: group
@@ -209,7 +232,13 @@ neonates.spec.CPP$cpp.gencat<-tapply(beh.neonates.CPP.pres$cpp.gencat, beh.neona
 neonates.spec.CPP$face<-tapply(beh.neonates.CPP.pres$presentation, beh.neonates.CPP.pres$species, function(x){ length(which(x == "face"))} ) #variable:face (number of neonates per species with face or brow presentationl)
 neonates.spec.CPP$vault<-tapply(beh.neonates.CPP.pres$presentation, beh.neonates.CPP.pres$species, function(x){ length(which(x=="vault")) }) # new variable with number of infants per species in vertex presentation
 neonates.spec.CPP$face.prop<-as.numeric(neonates.spec.CPP$face/(neonates.spec.CPP$face+neonates.spec.CPP$vault)) # new variable with proportion of face presentation
-#write.csv(neonates.spec.CPP,"neonates.spec.CPP.pres.csv")
+#write.csv(neonates.spec.CPP, "neonates_spec_cpp_pres.csv")
+nrow(neonates.spec.CPP) #23 species
+
+#Spearman's Rank Correlation
+cor.test(neonates.spec.CPP$cpp, neonates.spec.CPP$face.prop, method = "spearman")
+#data:  neonates.spec.CPP$cpp and neonates.spec.CPP$face.prop
+#S = 99.082, p-value = 0.6537, rho = 0.1743193
 
 # Regression
 lm.model.face<-lm(neonates.spec.CPP$face.prop~neonates.spec.CPP$cpp)
@@ -295,6 +324,14 @@ table(neonates.spec.CPP$cpp.gencat)
 #extreme    high     low
 #3       4       9
 
+neonates.spec.CPP.plot <- droplevels(neonates.spec.CPP[!is.na(neonates.spec.CPP$cpp.gencat), ])
+nrow(neonates.spec.CPP.plot) # n = 16
+kruskal.test(face.prop ~ cpp.gencat, data = neonates.spec.CPP.plot)
+
+pairwise.wilcox.test(neonates.spec.CPP.plot$face.prop,
+                     neonates.spec.CPP.plot$cpp.gencat,
+                     p.adjust.method = "BH")
+
 neonates.spec.CPP$cpp.gencat <- factor(neonates.spec.CPP$cpp.gencat,
                                        levels = c("low", "high", "extreme"),ordered = TRUE)
 
@@ -351,6 +388,7 @@ CPP.cat.face.plot
 
 ## ~~~~ PART 5: Fetal Emergence (Orientation) vs. CPP  ~~~~ ##
 beh.neonates.CPP.pos<-droplevels(beh.neonates.CPP[!is.na(beh.neonates.CPP$orientation),]) # cleaning data to remove entries without orientation data
+nrow(beh.neonates.CPP.pos) #124 cases
 
 neonates.spec.CPP<- data.frame(species = as.factor(levels(beh.neonates.CPP.pos$species))) #creating new dataset at species level for species info on infant face/vertex presentation
 neonates.spec.CPP$group<-tapply(beh.neonates.CPP.pos$group, beh.neonates.CPP.pos$species, first) #variable: group
@@ -362,7 +400,14 @@ neonates.spec.CPP$OA<-tapply(beh.neonates.CPP.pos$orientation, beh.neonates.CPP.
 neonates.spec.CPP$OP<-tapply(beh.neonates.CPP.pos$orientation, beh.neonates.CPP.pos$species, function(x){ length(which(x=="OP")) }) # variable:OP (number of neonates per species with OP positionl)
 neonates.spec.CPP$OA.prop<-as.numeric(neonates.spec.CPP$OA/(neonates.spec.CPP$OA+neonates.spec.CPP$OP)) # new variable with proportion of OA/(OA+OP)
 #write.csv(neonates.spec.CPP,"neonates.spec.CPP.OAOP.csv")
+nrow(neonates.spec.CPP) #29 species
 
+#Spearman's Rank Correlation
+cor.test(neonates.spec.CPP$cpp, neonates.spec.CPP$OA.prop, method = "spearman")
+#data:  neonates.spec.CPP$cpp and neonates.spec.CPP$OA.prop
+#S = 522.94, p-value = 0.1358, rho = -0.4366407
+
+#Regression
 lm.model.oa<-lm(neonates.spec.CPP$OA.prop~neonates.spec.CPP$cpp)
 summary(lm.model.oa)
 
@@ -389,7 +434,7 @@ for(i in 1:999){
 
 test_slope<-c(random.slope,slope.species.oa)
 length(which(abs(test_slope)>=abs(slope.species.oa)))/1000 #sig
-#0.051
+#0.052
 
 #Plot 6: scatter OA prop vs. CPP
 CPP.OA.plot <- ggplot(neonates.spec.CPP, aes(x = cpp, y = OA.prop)) +
@@ -444,6 +489,14 @@ tapply(neonates.spec.CPP$OA.prop, neonates.spec.CPP$cpp.gencat, var, na.rm=T)
 table(neonates.spec.CPP$cpp.gencat)
 #extreme    high     low
 #   5       5      11
+
+neonates.spec.CPP.plot <- droplevels(neonates.spec.CPP[!is.na(neonates.spec.CPP$cpp.gencat), ])
+nrow(neonates.spec.CPP.plot) # n = 21
+kruskal.test(OA.prop ~ cpp.gencat, data = neonates.spec.CPP.plot)
+
+pairwise.wilcox.test(neonates.spec.CPP.plot$OA.prop,
+                     neonates.spec.CPP.plot$cpp.gencat,
+                     p.adjust.method = "BH")
 
 neonates.spec.CPP$cpp.gencat <- factor(neonates.spec.CPP$cpp.gencat,
                                        levels = c("low", "high", "extreme"),ordered = TRUE)
@@ -505,6 +558,7 @@ CPP.cat.OA.plot
 
 beh.CPP<-droplevels(beh[!is.na(beh$cpp.gencat),])
 beh.neonates.CPP.assist<-droplevels(beh.CPP[!is.na(beh.CPP$assist),]) # cleaning data to remove entries without self assistance data
+nrow(beh.neonates.CPP.assist) #174 cases
 
 neonates.spec.CPP<- data.frame(species = as.factor(levels(beh.neonates.CPP.assist$species))) #creating new dataset at species level for species info
 neonates.spec.CPP$group<-tapply(beh.neonates.CPP.assist$group, beh.neonates.CPP.assist$species, first) #variable: group
@@ -516,6 +570,14 @@ neonates.spec.CPP$Y<-tapply(beh.neonates.CPP.assist$assist, beh.neonates.CPP.ass
 neonates.spec.CPP$N<-tapply(beh.neonates.CPP.assist$assist, beh.neonates.CPP.assist$species, function(x){ length(which(x=="FALSE")) }) # variable:N (number of births per species without self assistance)
 neonates.spec.CPP$assist.prop<-as.numeric(neonates.spec.CPP$Y/(neonates.spec.CPP$Y+neonates.spec.CPP$N)) # new variable with proportion of Y/Y+N
 #write.csv(neonates.spec.CPP,"neonates.spec.CPP.assist.csv")
+nrow(neonates.spec.CPP) #30
+
+cor.test(neonates.spec.CPP$cpp, neonates.spec.CPP$assist.prop, method = "spearman")
+#data:  neonates.spec.CPP$cpp and neonates.spec.CPP$assist.prop
+#S = 1009.5, p-value = 0.3594
+#sample estimates:
+#  rho
+#-0.2371363
 
 # CPP analyses at species level (17 species)
 lm.model.assist<-lm(neonates.spec.CPP$assist.prop~neonates.spec.CPP$cpp)
@@ -544,7 +606,7 @@ for(i in 1:999){
 
 test_slope<-c(random.slope,slope.species.assist)
 length(which(abs(test_slope)>=abs(slope.species.assist)))/1000 #sig
-#0.002
+#0.004
 
 #Plot 9: scatter assistance vs CPP
 CPP.assist.plot <- ggplot(neonates.spec.CPP, aes(x = cpp, y = assist.prop)) +
@@ -596,6 +658,17 @@ tapply(neonates.spec.CPP$assist.prop, neonates.spec.CPP$cpp.gencat, var, na.rm=T
 table(neonates.spec.CPP$cpp.gencat)
 #extreme    high     low
 #4       7      19
+
+neonates.spec.CPP.plot <- droplevels(neonates.spec.CPP[!is.na(neonates.spec.CPP$cpp.gencat), ])
+nrow(neonates.spec.CPP.plot) # n = 30
+kruskal.test(assist.prop ~ cpp.gencat, data = neonates.spec.CPP.plot)
+#data:  assist.prop by cpp.gencat
+#Kruskal-Wallis chi-squared = 6.6068, df = 2, p-value = 0.03676
+
+pairwise.wilcox.test(neonates.spec.CPP.plot$assist.prop,
+                     neonates.spec.CPP.plot$cpp.gencat,
+                     p.adjust.method = "BH")
+
 neonates.spec.CPP$cpp.gencat <- factor(neonates.spec.CPP$cpp.gencat,
                                        levels = c("low", "high", "extreme"),ordered = TRUE)
 
