@@ -16,6 +16,7 @@ library(phytools)
 library(dplyr)
 library(ggpubr)
 library(ggrepel)
+library(ggtext)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #Filtering only species that we have CPP values for
@@ -723,8 +724,9 @@ CPP.cat.assist.plot <- ggplot(neonates.spec.CPP.plot, aes(x = cpp.gencat, y = as
   )
 CPP.cat.assist.plot
 
-## ~~~ Panel Plots ~~~ ##
+## ~~~~ PART 9: Additional Figures ~~~~ ##
 
+## Panel Plots
 ggarrange(CPP.death.plot,CPP.face.plot,CPP.OA.plot,CPP.assist.plot,
           labels = c("A", "B", "C", "D"), # tags for the plots
           nrow = 2, ncol = 2)
@@ -739,15 +741,128 @@ ggarrange(CPP.cat.death.plot,CPP.cat.face.plot,CPP.cat.OA.plot,CPP.cat.assist.pl
           labels = c("A", "B", "C", "D"), # tags for the plots
           nrow = 2, ncol = 2)
 
+## Lollipop Chart
+spec.CPP <- spec[which(!is.na(spec$CPP)),] #drop species with no cpp values, n = 28
+#adding a row for Homo sapiens
+spec.CPP <- spec.CPP %>% add_row(N = NA, species.iucn = "Homo_sapiens", species = "Homo sapiens",
+                           group = "Hominoidea", tribe = NA, family = NA, genus = "Homo",
+                           have.beh = FALSE, have.cpp = TRUE,
+                           reports.n = NA, videos.n = NA, sources.n = NA, cases.n = NA, infant.n = NA,
+                           single.n = NA, twin.n = NA, triplet.n = NA, prim.n = NA, multip.n = NA,
+                           mat.survived = NA, mat.died = NA, inf.info = NA, inf.live = NA, inf.still = NA, inf.comp = NA, case.death = NA,
+                           death.prop = NA, ceph.n = NA, nonceph.n = NA, vault.n = NA, face.n = NA, brow.n = NA,
+                           OP = NA, OA = NA, ass.T = NA, ass.F = NA, CPP = 0.82, CPP.gencat = "other",
+                           .before = 14)
+
+#set Homo sapiens to be bold
+species_levels <- levels(reorder(spec.CPP$species, spec.CPP$CPP0))
+my_labels <- setNames(
+  ifelse(species_levels == "Homo sapiens",
+         paste0("**", species_levels, "**"),
+         species_levels),
+  species_levels
+)
+
+#adding a variable that calculates distance from 1 for line length
+spec.CPP$CPP0 <- spec.CPP$CPP-1
+
+#plotting lollipop
+CPP.species.plot <- ggplot(spec.CPP, aes(x = reorder(species, CPP0), y = CPP, color = CPP.gencat)) +
+  geom_segment(aes(y = 1, x = species, yend = CPP, xend = species, color = CPP.gencat), linewidth = 0.6) +
+  geom_point(size = 4) +
+  geom_text(color = "black", size = 2, label = spec.CPP$CPP) +
+  scale_color_manual(name = "CPP",
+                     breaks = c("extreme", "high", "low", "other"),
+                     labels = c("Extreme", "High", "Low", "Other"),
+                     values = c("extreme" = "#cd34b5", "high" = "#ffa600", "low" = "#00baff", "other" = "gray60")) +
+  scale_y_continuous(breaks = c(0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8)) +
+  scale_x_discrete(labels = my_labels) +
+  xlab("Species") +
+  ylab("CPP") +
+  coord_flip() +
+  theme_bw(base_size = 12, base_family = "Arial") +
+  theme(
+    axis.text.y = element_markdown(face = "italic", size = 9),
+    axis.title = element_text(size = 13),
+    axis.text.x = element_text(color = "black", size = 11),
+    axis.line = element_line(linewidth = 0.4),
+    axis.ticks = element_line(linewidth = 0.4),
+    legend.position = "bottom",
+    legend.title = element_text(size = 11, face = "bold"),
+    legend.text = element_text(size = 10),
+    plot.margin = margin(5, 5, 5, 5)
+  )
+
+CPP.species.plot
+
+## CPP by group boxplot
+spec.CPP.plot <- spec[which(!is.na(spec$CPP)),] #drop species with no cpp values, n = 28
+homo.point <- spec.CPP[spec.CPP$species == "Homo sapiens", ]
+
+CPP.group.boxplot <- ggplot(spec.CPP.plot, aes(x = group, y = CPP, fill = group)) +
+  geom_boxplot(outlier.shape = NA, linewidth = 0.4, alpha = 0.85) +
+  geom_point(width = 0.15, size = 1.5, color = "black", alpha = 0.5) +
+  geom_point(data = homo.point, aes(x = group, y = CPP),
+             shape = 8, size = 3, fill = "white", color = "black", stroke = 1, inherit.aes = FALSE) +
+  geom_text(data = homo.point, aes(x = group, y = CPP, label = species),
+            inherit.aes = FALSE, size = 3, fontface = "italic",
+            vjust = -1.5, hjust = 0.5) +
+  scale_fill_manual(values = c("#ffb14e", "#ea5f94", "#9d02d7", "#0000ff", "gray")) +
+  xlab("Group") +
+  ylab("CPP") +
+  theme_classic(base_size = 12, base_family = "Arial") +
+  theme(
+    axis.title = element_text(size = 13),
+    axis.text = element_text(color = "black", size = 11),
+    axis.line = element_line(linewidth = 0.4),
+    axis.ticks = element_line(linewidth = 0.4),
+    legend.position = "none",
+    plot.margin = margin(5, 5, 5, 5)
+  )
+
+CPP.group.boxplot
+
+## CPP by group violin plot
+spec.CPP.plot <- spec[which(!is.na(spec$CPP)),] #drop species with no cpp values, n = 28
+homo.point <- spec.CPP[spec.CPP$species == "Homo sapiens", ]
+
+CPP.group.violin <- ggplot(spec.CPP.plot, aes(x = group, y = CPP, fill = group)) +
+  geom_violin(outlier.shape = NA, linewidth = 0.4, alpha = 0.85) +
+  geom_point(width = 0.15, size = 1.5, color = "black", alpha = 0.5) +
+  geom_point(data = homo.point, aes(x = group, y = CPP),
+             shape = 8, size = 3, fill = "white", color = "black", stroke = 1, inherit.aes = FALSE) +
+  geom_text(data = homo.point, aes(x = group, y = CPP, label = species),
+            inherit.aes = FALSE, size = 3, fontface = "italic",
+            vjust = -1.5, hjust = 0.5) +
+  scale_fill_manual(values = c("#ffb14e", "#ea5f94", "#9d02d7", "#0000ff", "gray")) +
+  xlab("Group") +
+  ylab("CPP") +
+  theme_classic(base_size = 12, base_family = "Arial") +
+  theme(
+    axis.title = element_text(size = 13),
+    axis.text = element_text(color = "black", size = 11),
+    axis.line = element_line(linewidth = 0.4),
+    axis.ticks = element_line(linewidth = 0.4),
+    legend.position = "none",
+    plot.margin = margin(5, 5, 5, 5)
+  )
+
+CPP.group.violin
+
+## ~~~~ PART 10: Descriptive Statistics ~~~~ ##
+table(beh$group)
+table(beh$habitat)
+nrow(beh.neonates.CPP)
+
 ##~~~~~~~~~~~##
 #vector export
-ggsave("CPP_assist_plot_grouped.eps", plot = CPP.assist.plot.grouped
+ggsave("CPP_cat_lollipop.eps", plot = CPP.species.plot
 ,
        width = 84, height = 70, units = "mm",
        device = cairo_ps)
 
 #raster export
-ggsave("CPP_assist_plot_grouped.tiff", plot = CPP.assist.plot.grouped
+ggsave("CPP_cat_lollipop.tiff", plot = CPP.species.plot
 ,
        width = 84, height = 70, units = "mm",
        dpi = 300, compression = "lzw")
